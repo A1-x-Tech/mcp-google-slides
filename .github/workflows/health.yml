@@ -1,0 +1,44 @@
+name: Health check
+
+# End-to-end read-only check against the live Google Slides API. Auth is the OAuth2
+# refresh flow (client id/secret + refresh token stored as repo secrets — no per-run
+# minting by hand). smoke makes NO writes here: it fetches one deck's slide inventory
+# when GOOGLE_SLIDES_SMOKE_PRESENTATION_ID is set, otherwise it only exchanges the
+# refresh token for an access token (GOOGLE_SLIDES_SMOKE_WRITE is deliberately not
+# set). Runs daily + manual dispatch only (never on push/PR), so secrets aren't
+# exposed to PRs/forks; the smoke step skips itself when the secrets are not
+# configured.
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    if: github.repository == 'A1-x-Tech/mcp-google-slides'
+    env:
+      GOOGLE_SLIDES_CLIENT_ID: ${{ secrets.GOOGLE_SLIDES_CLIENT_ID }}
+      GOOGLE_SLIDES_CLIENT_SECRET: ${{ secrets.GOOGLE_SLIDES_CLIENT_SECRET }}
+      GOOGLE_SLIDES_REFRESH_TOKEN: ${{ secrets.GOOGLE_SLIDES_REFRESH_TOKEN }}
+      GOOGLE_SLIDES_SMOKE_PRESENTATION_ID: ${{ secrets.GOOGLE_SLIDES_SMOKE_PRESENTATION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+      - run: npm ci
+      - name: Read-only smoke check
+        if: env.GOOGLE_SLIDES_CLIENT_ID != ''
+        run: npm run smoke
+      - name: Skipped (no secrets configured)
+        if: env.GOOGLE_SLIDES_CLIENT_ID == ''
+        run: echo "GOOGLE_SLIDES_* secrets are not set — live smoke skipped."
