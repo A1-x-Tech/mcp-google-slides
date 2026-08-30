@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.A1-x-Tech/mcp-google-slides",
   "title": "Google Slides MCP",
-  "description": "MCP server for the Google Slides API: create and edit presentations, slides, text, shapes, tables, images, speaker notes, comments and export.",
+  "description": "MCP server for the Google Slides API: presentations, slides, text, shapes, images and tables.",
   "websiteUrl": "https://github.com/A1-x-Tech/mcp-google-slides#readme",
   "repository": {
     "url": "https://github.com/A1-x-Tech/mcp-google-slides",
