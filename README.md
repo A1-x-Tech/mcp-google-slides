@@ -3,8 +3,8 @@
 **English** | [Русский](./README.ru.md)
 
 [![npm](https://img.shields.io/npm/v/%40a1-x-tech%2Fmcp-google-slides)](https://www.npmjs.com/package/@a1-x-tech/mcp-google-slides)
-[![CI](https://github.com/A1-x-Tech/mcp-google-slides/actions/workflows/ci.yml/badge.svg)](https://github.com/A1-x-Tech/mcp-google-slides/actions/workflows/ci.yml)
 [![Glama](https://glama.ai/mcp/servers/A1-x-Tech/mcp-google-slides/badges/score.svg)](https://glama.ai/mcp/servers/A1-x-Tech/mcp-google-slides)
+[![CI](https://github.com/A1-x-Tech/mcp-google-slides/actions/workflows/ci.yml/badge.svg)](https://github.com/A1-x-Tech/mcp-google-slides/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 **A1 Google Slides MCP** lets an AI app build and edit Google Slides presentations in plain language. Draft a deck, add and rearrange slides, write and style text, place shapes, images and tables, keep speaker notes, review comments and export the result as PDF or PPTX.
