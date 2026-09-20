@@ -11,7 +11,8 @@
 
 It uses the Google Slides API with your Google account. Everything inside a deck is addressed by explicit object ids, and it makes the limits of the Slides API explicit instead of implying that every presentation task is possible.
 
-- **26 tools.** Inspect decks and pages, edit slides, text, shapes, images and tables, manage speaker notes and comments, render thumbnails and export files.
+- **32 tools.** Inspect decks and pages, edit slides, text, shapes, images and tables, manage speaker notes and comments, render thumbnails and export files.
+- **Connects from the conversation.** Say "connect Google Slides": the server walks you through the OAuth client, catches Google's redirect on `127.0.0.1` with PKCE and keeps the tokens itself — no config files, no restart.
 - **Edits are atomic.** Changes ride the API's `batchUpdate`: one invalid request voids the whole batch, so a deck is never left half-edited.
 - **Your Drive stays out of reach.** Comments, export and local-image upload use the Drive API strictly for the one presentation file — there are no tools to list, share, rename or delete Drive files.
 - **Minimal Google scopes.** It needs `presentations`; Drive scopes are required only for local images, comments and export.
@@ -52,10 +53,10 @@ Start with a read-only question:
 
 ## Quick start
 
-You need Node.js 20+, a Google account and OAuth credentials from a Google Cloud project with the Google Slides API enabled.
+You need Node.js 20+ and a Google account. Credentials are not required at install time — the server connects from the conversation.
 
-1. [Prepare Google OAuth access](#getting-access).
-2. Add the server to your AI app.
+1. Add the server to your AI app.
+2. Say "connect Google Slides": the assistant walks you through [creating the OAuth client and approving access](#getting-access) without editing config files.
 3. Ask the read-only question above.
 
 <details open>
@@ -69,9 +70,6 @@ You need Node.js 20+, a Google account and OAuth credentials from a Google Cloud
 
 ```bash
 codex mcp add google-slides \
-  --env GOOGLE_SLIDES_CLIENT_ID=your_client_id \
-  --env GOOGLE_SLIDES_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_SLIDES_REFRESH_TOKEN=your_refresh_token \
   -- npx -y @a1-x-tech/mcp-google-slides@latest
 ```
 
@@ -90,9 +88,6 @@ codex mcp list
 
 ```bash
 claude mcp add \
-  --env GOOGLE_SLIDES_CLIENT_ID=your_client_id \
-  --env GOOGLE_SLIDES_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_SLIDES_REFRESH_TOKEN=your_refresh_token \
   --transport stdio --scope user google-slides \
   -- npx -y @a1-x-tech/mcp-google-slides@latest
 ```
@@ -119,12 +114,7 @@ This repository currently publishes an npm stdio package and does not contain a 
   "mcpServers": {
     "google-slides": {
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"],
-      "env": {
-        "GOOGLE_SLIDES_CLIENT_ID": "your_client_id",
-        "GOOGLE_SLIDES_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_SLIDES_REFRESH_TOKEN": "your_refresh_token"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"]
     }
   }
 }
@@ -149,12 +139,7 @@ Add this to `~/.cursor/mcp.json` on macOS/Linux or `%USERPROFILE%\.cursor\mcp.js
     "google-slides": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"],
-      "env": {
-        "GOOGLE_SLIDES_CLIENT_ID": "your_client_id",
-        "GOOGLE_SLIDES_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_SLIDES_REFRESH_TOKEN": "your_refresh_token"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"]
     }
   }
 }
@@ -177,19 +162,9 @@ Run **MCP: Open User Configuration** and add:
     "google-slides": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"],
-      "env": {
-        "GOOGLE_SLIDES_CLIENT_ID": "${input:slides_client_id}",
-        "GOOGLE_SLIDES_CLIENT_SECRET": "${input:slides_client_secret}",
-        "GOOGLE_SLIDES_REFRESH_TOKEN": "${input:slides_refresh_token}"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"]
     }
-  },
-  "inputs": [
-    { "type": "promptString", "id": "slides_client_id", "description": "Google OAuth client ID" },
-    { "type": "promptString", "id": "slides_client_secret", "description": "Google OAuth client secret", "password": true },
-    { "type": "promptString", "id": "slides_refresh_token", "description": "Google OAuth refresh token", "password": true }
-  ]
+  }
 }
 ```
 
@@ -250,7 +225,20 @@ The AI client controls confirmation prompts. The server marks reads, writes and 
 
 ## Getting access
 
-Google Slides requires OAuth 2.0; an API key is not enough.
+Google Slides requires OAuth 2.0; an API key is not enough. There are two ways in, and the first one needs no configuration files.
+
+### Connect from the chat (recommended)
+
+Say "connect Google Slides" and the assistant runs the flow with you:
+
+1. `setup_instructions` prints the checklist: create or select a Google Cloud project, enable **Google Slides API**, configure the consent screen and create a **Desktop app** OAuth client.
+2. Download that client's JSON ("Download JSON") and give the assistant its **path** — `set_client` stores it owner-only. The secret never goes through the conversation.
+3. `start_login` returns a Google consent link. Open it **on this machine** and approve; the code comes back to a one-shot listener on `127.0.0.1` (PKCE), never through the chat.
+4. `finish_login` exchanges the code and saves the tokens to `~/.config/mcp-google-slides/credentials.json` (mode 0600).
+
+The tokens are re-read on every call, so the connection works immediately — no restart of the AI app. `auth_status` shows what is connected, `logout` revokes and deletes it.
+
+### Environment variables (CI, unattended installs)
 
 1. Create or select a Google Cloud project and enable **Google Slides API**. Enable **Google Drive API** too if you want comments, export or local-image upload.
 2. Configure the OAuth consent screen and create a **Desktop app** OAuth client.
@@ -268,12 +256,15 @@ Testing-mode OAuth refresh tokens can expire after seven days. Publish the OAuth
 
 ## Configuration
 
+Every variable is optional — with none of them the server connects [from the chat](#connect-from-the-chat-recommended).
+
 | Variable | Required | Description |
 |---|---|---|
-| `GOOGLE_SLIDES_CLIENT_ID` | Yes* | OAuth client ID. |
-| `GOOGLE_SLIDES_CLIENT_SECRET` | Yes* | OAuth client secret. |
-| `GOOGLE_SLIDES_REFRESH_TOKEN` | Yes* | OAuth refresh token. |
-| `GOOGLE_SLIDES_ACCESS_TOKEN` | Yes* | Short-lived (~1 h) alternative to the OAuth trio. |
+| `GOOGLE_SLIDES_CLIENT_ID` | No* | OAuth client ID. |
+| `GOOGLE_SLIDES_CLIENT_SECRET` | No* | OAuth client secret. |
+| `GOOGLE_SLIDES_REFRESH_TOKEN` | No* | OAuth refresh token. |
+| `GOOGLE_SLIDES_ACCESS_TOKEN` | No* | Short-lived (~1 h) alternative to the OAuth trio. |
+| `GOOGLE_SLIDES_OAUTH_PORT` | No | Fixed loopback port for the in-chat login; useful over SSH port forwarding. |
 | `GOOGLE_SLIDES_API_BASE` | No | Google Slides API base URL override. |
 | `GOOGLE_SLIDES_DRIVE_API_BASE` | No | Google Drive API base URL override (internal dependency: comments, export, image upload). |
 | `GOOGLE_SLIDES_TIMEOUT_MS` | No | Per-request timeout; default `60000` ms. |

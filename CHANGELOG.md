@@ -5,6 +5,34 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-09-20
+
+### Added
+
+- In-chat Google login via `@a1-x-tech/mcp-google-auth` — 6 new onboarding
+  tools: `auth_status`, `setup_instructions`, `set_client`, `start_login`
+  (deliberately not read-only), `finish_login`, `logout`. The flow is loopback
+  `127.0.0.1` + PKCE against a user-owned Desktop OAuth client; the code is
+  exchanged locally and the client secret never passes through the chat. Each
+  tool has a capability page under `docs/capabilities/`.
+- Tokens from a login are stored per server in
+  `~/.config/mcp-google-slides/credentials.json` (0600) and re-read on every
+  call, so a login finished mid-session works without restarting the AI client.
+  `GOOGLE_SLIDES_OAUTH_PORT` pins the loopback listener port for SSH forwarding.
+
+### Changed
+
+- The client accepts the component's `TokenProvider` as a fallback token
+  source: environment credentials (the refresh triple or `GOOGLE_SLIDES_ACCESS_TOKEN`)
+  keep absolute priority and behave exactly as before; the stored in-chat login
+  is used only when the environment carries no credentials. The single 401
+  re-mint + replay works for provider-backed tokens too, and is skipped when
+  nothing can be re-minted.
+- The unconfigured `initialize` instructions lead with the in-chat login
+  (`setup_instructions` → `set_client` → `start_login` → `finish_login`, no
+  restart needed); setting the environment variables + restart remains the
+  documented alternative.
+
 ## [0.1.0] — 2026-08-30
 
 ### Added

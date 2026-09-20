@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -15,9 +18,16 @@ import { registerNoteTools } from "../dist/tools/notes.js";
 import { registerCommentTools } from "../dist/tools/comments.js";
 import { registerExportTools } from "../dist/tools/export.js";
 import { registerRawTool } from "../dist/tools/raw.js";
+import { registerAuthTools } from "../dist/tools/auth.js";
 
+/**
+ * Sorted, because every assertion compares it against a sorted tool list. The
+ * six onboarding tools come from @a1-x-tech/mcp-google-auth, so this list is
+ * also the check that the component is wired into the published binary.
+ */
 const ALL_TOOLS = [
   "add_slide",
+  "auth_status",
   "batch_update",
   "create_image",
   "create_presentation",
@@ -27,6 +37,7 @@ const ALL_TOOLS = [
   "duplicate_slide",
   "edit_table",
   "export_presentation",
+  "finish_login",
   "get_page",
   "get_presentation",
   "get_speaker_notes",
@@ -34,16 +45,33 @@ const ALL_TOOLS = [
   "insert_text",
   "list_layouts",
   "list_slides",
+  "logout",
   "manage_comments",
   "move_slides",
   "raw_request",
   "replace_image",
   "replace_text",
+  "set_client",
   "set_speaker_notes",
   "set_text",
+  "setup_instructions",
+  "start_login",
   "update_text_style",
   "update_transform",
 ];
+
+/**
+ * A throwaway $XDG_CONFIG_HOME for the spawned server. The auth component
+ * re-reads $XDG_CONFIG_HOME/mcp-google-slides/credentials.json per call, so
+ * without this a real login on the developer's machine would make the
+ * "unconfigured" case pass for the wrong reason.
+ */
+function isolatedConfigDir(t) {
+  const dir = mkdtempSync(join(tmpdir(), "mcp-slides-dist-smoke-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  return dir;
+}
+
 
 test("dist client rejects foreign-origin paths before sending the Bearer token", async () => {
   const original = globalThis.fetch;
@@ -98,6 +126,7 @@ test("dist registers the expected tools", () => {
   };
   const client = {};
 
+  registerAuthTools(server, client);
   registerPresentationTools(server, client);
   registerSlideTools(server, client);
   registerTextTools(server, client);
@@ -111,13 +140,14 @@ test("dist registers the expected tools", () => {
   assert.deepEqual(names.sort(), ALL_TOOLS);
 });
 
-test("dist binary completes a real MCP handshake over stdio and lists every tool", async () => {
+test("dist binary completes a real MCP handshake over stdio and lists every tool", async (t) => {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [fileURLToPath(new URL("../dist/index.js", import.meta.url))],
     env: {
       ...process.env,
       GOOGLE_SLIDES_ACCESS_TOKEN: "test-token",
+      XDG_CONFIG_HOME: isolatedConfigDir(t),
       ASKADS_TELEMETRY: "0", // keep the suite offline
     },
     stderr: "pipe",
@@ -152,13 +182,14 @@ test("dist binary completes a real MCP handshake over stdio and lists every tool
  * tool call with the actionable error — offline: the CredentialsError fires
  * before any fetch, so this test never touches the network.
  */
-test("dist binary starts without credentials: handshake, tool list, actionable call error", async () => {
+test("dist binary starts without credentials: handshake, tool list, actionable call error", async (t) => {
   const env = Object.fromEntries(
     Object.entries(process.env).filter(
       ([key, value]) => value !== undefined && !key.startsWith("GOOGLE_SLIDES_"),
     ),
   );
   env.ASKADS_TELEMETRY = "0"; // keep the suite offline
+  env.XDG_CONFIG_HOME = isolatedConfigDir(t); // ignore any real login on this machine
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [fileURLToPath(new URL("../dist/index.js", import.meta.url))],
@@ -170,7 +201,8 @@ test("dist binary starts without credentials: handshake, tool list, actionable c
   try {
     // The model must read the fix before it picks a tool.
     const instructions = client.getInstructions() ?? "";
-    assert.match(instructions, /not connected/);
+    assert.match(instructions, /NOT CONNECTED/);
+    assert.match(instructions, /start_login/);
     assert.match(instructions, /GOOGLE_SLIDES_CLIENT_ID/);
     assert.match(instructions, /restart/);
 
@@ -181,7 +213,8 @@ test("dist binary starts without credentials: handshake, tool list, actionable c
     const result = await client.callTool({ name: "list_slides", arguments: { presentation_id: "smoke-deck" } });
     assert.equal(result.isError, true);
     const text = result.content.map((c) => c.text ?? "").join(" ");
-    assert.match(text, /Google OAuth credentials are required: set GOOGLE_SLIDES_CLIENT_ID/);
+    assert.match(text, /not connected/i);
+    assert.match(text, /start_login/);
     assert.match(text, /restart the server/);
   } finally {
     await client.close();

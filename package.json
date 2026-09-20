@@ -1,6 +1,6 @@
 {
   "name": "@a1-x-tech/mcp-google-slides",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for the Google Slides API — create and edit presentations, slides, text, shapes, tables and images, manage speaker notes, comments, thumbnails and export. For Claude, Cursor, Codex and other AI clients.",
   "mcpName": "io.github.A1-x-Tech/mcp-google-slides",
   "type": "module",
@@ -51,6 +51,7 @@
     "url": "https://github.com/A1-x-Tech/mcp-google-slides/issues"
   },
   "dependencies": {
+    "@a1-x-tech/mcp-google-auth": "^0.1.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.25.0"
   },

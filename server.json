@@ -8,13 +8,13 @@
     "url": "https://github.com/A1-x-Tech/mcp-google-slides",
     "source": "github"
   },
-  "version": "0.1.0",
+  "version": "0.2.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@a1-x-tech/mcp-google-slides",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "transport": {
         "type": "stdio"
       },
@@ -39,9 +39,15 @@
         },
         {
           "name": "GOOGLE_SLIDES_ACCESS_TOKEN",
-          "description": "Static OAuth2 access token (~1h lifetime) — alternative to the refresh-token trio, mostly for testing.",
+          "description": "Static OAuth2 access token (~1h lifetime) \u2014 alternative to the refresh-token trio, mostly for testing.",
           "isRequired": false,
           "isSecret": true
+        },
+        {
+          "name": "GOOGLE_SLIDES_OAUTH_PORT",
+          "description": "Fixed port for the loopback listener of the in-chat login (127.0.0.1 + PKCE). Set it when the client runs over SSH port forwarding; otherwise a free port is picked per login.",
+          "isRequired": false,
+          "isSecret": false
         },
         {
           "name": "GOOGLE_SLIDES_API_BASE",

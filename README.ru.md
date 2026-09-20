@@ -11,7 +11,8 @@
 
 Сервер работает с Google Slides API через ваш Google-аккаунт. Всё внутри презентации адресуется явными object id, а ограничения Slides API сервер называет прямо, вместо того чтобы делать вид, будто с презентацией возможно всё.
 
-- **26 инструментов.** Проверка презентаций и страниц, редактирование слайдов, текста, фигур, изображений и таблиц, заметки докладчика и комментарии, миниатюры и экспорт файлов.
+- **32 инструментов.** Проверка презентаций и страниц, редактирование слайдов, текста, фигур, изображений и таблиц, заметки докладчика и комментарии, миниатюры и экспорт файлов.
+- **Подключение из диалога.** Скажите «подключи Google Презентации»: сервер проведёт через создание OAuth-клиента, поймает редирект Google на `127.0.0.1` с PKCE и сам сохранит токены — без конфигов и перезапуска.
 - **Правки атомарны.** Изменения идут через `batchUpdate` API: один неверный запрос отменяет весь пакет, поэтому презентация не остаётся отредактированной наполовину.
 - **Ваш Drive недосягаем.** Комментарии, экспорт и загрузка локальных изображений используют Drive API строго для одного файла презентации — инструментов, чтобы перечислять, расшаривать, переименовывать или удалять файлы Drive, нет.
 - **Минимальные scope Google.** Нужен `presentations`; scope Drive требуются только для локальных изображений, комментариев и экспорта.
@@ -52,10 +53,10 @@
 
 ## Быстрый старт
 
-Нужны Node.js 20+, Google-аккаунт и OAuth-данные из проекта Google Cloud с включённым Google Slides API.
+Нужны Node.js 20+ и Google-аккаунт. Учётные данные при установке не нужны: сервер подключается прямо в диалоге.
 
-1. [Подготовьте Google OAuth-доступ](#как-получить-доступ).
-2. Добавьте сервер в AI-приложение.
+1. Добавьте сервер в AI-приложение.
+2. Скажите «подключи Google Презентации» — ассистент проведёт [создание OAuth-клиента и выдачу доступа](#как-получить-доступ), не трогая конфиги.
 3. Отправьте запрос, который только читает данные.
 
 <details open>
@@ -69,9 +70,6 @@
 
 ```bash
 codex mcp add google-slides \
-  --env GOOGLE_SLIDES_CLIENT_ID=your_client_id \
-  --env GOOGLE_SLIDES_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_SLIDES_REFRESH_TOKEN=your_refresh_token \
   -- npx -y @a1-x-tech/mcp-google-slides@latest
 ```
 
@@ -90,9 +88,6 @@ codex mcp list
 
 ```bash
 claude mcp add \
-  --env GOOGLE_SLIDES_CLIENT_ID=your_client_id \
-  --env GOOGLE_SLIDES_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_SLIDES_REFRESH_TOKEN=your_refresh_token \
   --transport stdio --scope user google-slides \
   -- npx -y @a1-x-tech/mcp-google-slides@latest
 ```
@@ -119,12 +114,7 @@ claude mcp list
   "mcpServers": {
     "google-slides": {
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"],
-      "env": {
-        "GOOGLE_SLIDES_CLIENT_ID": "your_client_id",
-        "GOOGLE_SLIDES_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_SLIDES_REFRESH_TOKEN": "your_refresh_token"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"]
     }
   }
 }
@@ -149,12 +139,7 @@ claude mcp list
     "google-slides": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"],
-      "env": {
-        "GOOGLE_SLIDES_CLIENT_ID": "your_client_id",
-        "GOOGLE_SLIDES_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_SLIDES_REFRESH_TOKEN": "your_refresh_token"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"]
     }
   }
 }
@@ -177,19 +162,9 @@ claude mcp list
     "google-slides": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"],
-      "env": {
-        "GOOGLE_SLIDES_CLIENT_ID": "${input:slides_client_id}",
-        "GOOGLE_SLIDES_CLIENT_SECRET": "${input:slides_client_secret}",
-        "GOOGLE_SLIDES_REFRESH_TOKEN": "${input:slides_refresh_token}"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-slides@latest"]
     }
-  },
-  "inputs": [
-    { "type": "promptString", "id": "slides_client_id", "description": "Google OAuth client ID" },
-    { "type": "promptString", "id": "slides_client_secret", "description": "Google OAuth client secret", "password": true },
-    { "type": "promptString", "id": "slides_refresh_token", "description": "Google OAuth refresh token", "password": true }
-  ]
+  }
 }
 ```
 
@@ -250,7 +225,20 @@ Slides API не может удалить, переименовать или р�
 
 ## Как получить доступ
 
-Google Slides требует OAuth 2.0: одного API-ключа недостаточно.
+Google Slides требует OAuth 2.0: одного API-ключа недостаточно. Путей два, и первый не требует править конфигурационные файлы.
+
+### Подключение из диалога (рекомендуемый путь)
+
+Скажите «подключи Google Презентации», и ассистент пройдёт флоу вместе с вами:
+
+1. `setup_instructions` выдаёт чек-лист: создать или выбрать проект Google Cloud, включить **Google Slides API**, настроить consent screen и создать OAuth-клиент типа **Desktop app**.
+2. Скачайте JSON этого клиента («Download JSON») и передайте ассистенту **путь** к файлу — `set_client` сохранит его с правами только для владельца. Секрет через переписку не проходит.
+3. `start_login` возвращает ссылку на согласие Google. Откройте её **на этой же машине** и подтвердите доступ: код возвращается на одноразовый слушатель `127.0.0.1` (PKCE), а не в чат.
+4. `finish_login` меняет код на токены и кладёт их в `~/.config/mcp-google-slides/credentials.json` (права 0600).
+
+Токены перечитываются на каждый вызов, поэтому подключение действует немедленно — перезапускать AI-приложение не нужно. `auth_status` показывает состояние, `logout` отзывает токен и удаляет его.
+
+### Переменные окружения (CI и автоматические установки)
 
 1. Создайте или выберите проект Google Cloud и включите **Google Slides API**. Также включите **Google Drive API**, если нужны комментарии, экспорт или загрузка локальных изображений.
 2. Настройте OAuth consent screen и создайте OAuth-клиент типа **Desktop app**.
@@ -268,12 +256,15 @@ Refresh token OAuth-приложения в режиме Testing может ис
 
 ## Конфигурация
 
+Все переменные необязательные — без единой из них сервер подключается [из диалога](#подключение-из-диалога-рекомендуемый-путь).
+
 | Переменная | Обязательна | Описание |
 |---|---|---|
-| `GOOGLE_SLIDES_CLIENT_ID` | Да* | OAuth client ID. |
-| `GOOGLE_SLIDES_CLIENT_SECRET` | Да* | OAuth client secret. |
-| `GOOGLE_SLIDES_REFRESH_TOKEN` | Да* | OAuth refresh token. |
-| `GOOGLE_SLIDES_ACCESS_TOKEN` | Да* | Короткоживущая (~1 ч) альтернатива OAuth-тройке. |
+| `GOOGLE_SLIDES_CLIENT_ID` | Нет* | OAuth client ID. |
+| `GOOGLE_SLIDES_CLIENT_SECRET` | Нет* | OAuth client secret. |
+| `GOOGLE_SLIDES_REFRESH_TOKEN` | Нет* | OAuth refresh token. |
+| `GOOGLE_SLIDES_ACCESS_TOKEN` | Нет* | Короткоживущая (~1 ч) альтернатива OAuth-тройке. |
+| `GOOGLE_SLIDES_OAUTH_PORT` | Нет | Фиксированный порт loopback-слушателя для входа из диалога; нужен при пробросе портов по SSH. |
 | `GOOGLE_SLIDES_API_BASE` | Нет | Переопределяет базовый URL Google Slides API. |
 | `GOOGLE_SLIDES_DRIVE_API_BASE` | Нет | Переопределяет базовый URL Google Drive API (внутренняя зависимость: комментарии, экспорт, загрузка изображений). |
 | `GOOGLE_SLIDES_TIMEOUT_MS` | Нет | Тайм-аут одного запроса; по умолчанию `60000` мс. |
