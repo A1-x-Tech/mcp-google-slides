@@ -8,13 +8,13 @@
     "url": "https://github.com/A1-x-Tech/mcp-google-slides",
     "source": "github"
   },
-  "version": "0.2.0",
+  "version": "1.0.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@a1-x-tech/mcp-google-slides",
-      "version": "0.2.0",
+      "version": "1.0.0",
       "transport": {
         "type": "stdio"
       },

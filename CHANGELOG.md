@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] - 2026-09-24
+
+### Changed
+
+- First stable release. The code is unchanged from 0.2.0; the version now states
+  what was already true of it — the tool surface, tool argument shapes,
+  environment variable names and response envelopes are settled, and breaking any
+  of them from here on requires a major bump.
+
 ## [0.2.0] - 2026-09-20
 
 ### Added
@@ -90,4 +99,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 - Docs: technical reference (`docs/TOOLS.md`), a task-oriented capability page
   per tool (`docs/capabilities/`), development and publishing guides.
 
+[1.0.0]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v1.0.0
+[0.2.0]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v0.2.0
 [0.1.0]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v0.1.0
