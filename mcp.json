@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "google-slides": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@a1-x-tech/mcp-google-slides@latest"
+      ]
+    }
+  }
+}

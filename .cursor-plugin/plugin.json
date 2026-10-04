@@ -1,0 +1,23 @@
+{
+  "name": "mcp-google-slides",
+  "displayName": "A1 Google Slides MCP",
+  "description": "MCP server for the Google Slides API — create and edit presentations, slides, text, shapes, tables and images, manage speaker notes, comments, thumbnails and export. For Claude, Cursor, Codex and othe",
+  "author": {
+    "name": "Aleksandr Kovalko & Zinnur Temerbekov"
+  },
+  "homepage": "https://github.com/A1-x-Tech/mcp-google-slides#readme",
+  "repository": "https://github.com/A1-x-Tech/mcp-google-slides",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "google",
+    "google-slides",
+    "slides",
+    "presentations",
+    "claude",
+    "cursor",
+    "codex"
+  ],
+  "logo": "assets/a1-logo.svg"
+}
