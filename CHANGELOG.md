@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] — 2026-10-31
+
+### Fixed
+
+- Telemetry: when the error excerpt finds nothing, the server's own error classes
+  (`AuthRequiredError`, `AbortError`, …) send their class name, never the message; a plain `Error`
+  and system errors send nothing. Node errors with a `code`, `errno` or `syscall` send only their type
+  and code. Such failures used to arrive with no text.
+
 ## [1.1.0] — 2026-10-31
 
 ### Changed
@@ -109,6 +118,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 - Docs: technical reference (`docs/TOOLS.md`), a task-oriented capability page
   per tool (`docs/capabilities/`), development and publishing guides.
 
+[1.1.1]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v1.1.1
 [1.1.0]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v1.1.0
 [1.0.0]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v1.0.0
 [0.2.0]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v0.2.0
