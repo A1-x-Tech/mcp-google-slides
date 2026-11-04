@@ -5,6 +5,7 @@ import {
   unconfiguredPrefix,
   type GoogleAuthOptions,
 } from "@a1-x-tech/mcp-google-auth";
+import { fail } from "./util.js";
 
 /**
  * The scopes an in-chat login requests (the per-task table lives in
@@ -26,6 +27,8 @@ export const AUTH_OPTIONS: GoogleAuthOptions = {
   serverName: "slides",
   envPrefix: "GOOGLE_SLIDES",
   scopes: LOGIN_SCOPES,
+  // Login-tool failures go through the server's own renderer, so telemetry gets their origin.
+  fail,
 };
 
 /**
