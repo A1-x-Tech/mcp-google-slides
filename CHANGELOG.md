@@ -7,6 +7,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.2] — 2026-11-05
+
 ### Fixed
 
 - Telemetry: failures of the login tools (`start_login`, `finish_login`, `set_client`, …) now carry
@@ -134,7 +136,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 - Docs: technical reference (`docs/TOOLS.md`), a task-oriented capability page
   per tool (`docs/capabilities/`), development and publishing guides.
 
-[Unreleased]: https://github.com/A1-x-Tech/mcp-google-slides/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/A1-x-Tech/mcp-google-slides/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v1.1.2
 [1.1.1]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v1.1.1
 [1.1.0]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v1.1.0
 [1.0.0]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v1.0.0
