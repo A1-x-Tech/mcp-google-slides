@@ -820,13 +820,18 @@ export class GoogleSlidesClient {
 
   /**
    * Replaces the entire text of a shape or table cell: one atomic batch of
-   * deleteText(ALL) + insertText. An empty target makes deleteText fail with a
-   * 400 saying the object "has no text" — batchUpdate is atomic, so that
-   * rejection applied nothing and the insert is safely re-sent alone. Only
-   * that specific rejection triggers the fallback: other deleteText 400s
-   * (object not found, object cannot hold text) are rethrown untouched, so
-   * the root cause is never masked by a doomed insert-only resend. An empty
-   * `text` just clears the object.
+   * deleteText(ALL) + insertText. ALL resolves to [0, len - 1) because the
+   * trailing `\n` of a text body can never be deleted, so an empty target
+   * makes deleteText (requests[0]) fail with a 400 in one of two wordings:
+   * "has no text" when the object carries no text payload at all, or "The
+   * startIndex 0 must be less than the endIndex 0" when its text is just the
+   * implicit `\n` (fresh table cells, cleared placeholders, empty speaker
+   * notes). batchUpdate is atomic, so that rejection applied nothing and the
+   * insert is safely re-sent alone. Only those rejections of requests[0]
+   * trigger the fallback: other deleteText 400s (object not found, object
+   * cannot hold text) and any rejection of the insert are rethrown untouched,
+   * so the root cause is never masked by a doomed insert-only resend. An
+   * empty `text` just clears the object.
    */
   async setText(p: SetTextParams): Promise<unknown> {
     const cell = cellLocation(p.rowIndex, p.columnIndex);
@@ -840,8 +845,8 @@ export class GoogleSlidesClient {
       const noText =
         err instanceof GoogleSlidesError &&
         err.status === 400 &&
-        /deleteText/i.test(err.message) &&
-        /no text/i.test(err.message);
+        /requests\[0\]\.deleteText/i.test(err.message) &&
+        /no text|startIndex 0 must be less than (?:the )?endIndex 0/i.test(err.message);
       if (!noText) throw err;
       if (ins) return this.batchUpdate(p.presentationId, [ins]);
       return { cleared: false, note: "The object had no text to delete." };

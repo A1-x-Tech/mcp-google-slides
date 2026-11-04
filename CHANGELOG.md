@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- `set_text` / `set_speaker_notes`: the empty-target fallback now also recognises the rejection the
+  Slides API actually sends for a shape or table cell whose text is just the implicit trailing
+  newline — `Invalid requests[0].deleteText: The startIndex 0 must be less than the endIndex 0`
+  (fresh table cells, cleared placeholders, empty speaker notes). Such calls used to fail with that
+  400; now the delete is skipped and the text is inserted, as the tool description promised.
+
 ## [1.1.1] — 2026-10-31
 
 ### Fixed

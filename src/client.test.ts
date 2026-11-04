@@ -494,6 +494,76 @@ test("setText rethrows non-deleteText 400s untouched", async () => {
   }
 });
 
+const IMPLICIT_NEWLINE_400 =
+  '{"error":{"code":400,"message":"Invalid requests[0].deleteText: The startIndex 0 must be less than the endIndex 0","status":"INVALID_ARGUMENT"}}';
+
+test("setText on an empty table cell (only the implicit newline) falls back to insert-only", async () => {
+  let n = 0;
+  const mock = mockFetch(() => {
+    n++;
+    if (n === 1) return new Response(IMPLICIT_NEWLINE_400, { status: 400 });
+    return okJson({ ok: true });
+  });
+  try {
+    const result = await new GoogleSlidesClient(staticConfig()).setText({
+      presentationId: "p",
+      objectId: "tbl",
+      text: "Q3",
+      rowIndex: 0,
+      columnIndex: 1,
+    });
+    assert.deepEqual(result, { ok: true });
+    assert.equal(mock.calls.length, 2);
+    assert.deepEqual(lastBody(mock.calls), {
+      requests: [
+        {
+          insertText: {
+            objectId: "tbl",
+            cellLocation: { rowIndex: 0, columnIndex: 1 },
+            text: "Q3",
+            insertionIndex: 0,
+          },
+        },
+      ],
+    });
+  } finally {
+    mock.restore();
+  }
+});
+
+test("setText with empty text on an implicit-newline target reports the no-op", async () => {
+  const mock = mockFetch(() => new Response(IMPLICIT_NEWLINE_400, { status: 400 }));
+  try {
+    const result = await new GoogleSlidesClient(staticConfig()).setText({
+      presentationId: "p",
+      objectId: "empty-box",
+      text: "",
+    });
+    assert.deepEqual(result, { cleared: false, note: "The object had no text to delete." });
+    assert.equal(mock.calls.length, 1);
+  } finally {
+    mock.restore();
+  }
+});
+
+test("setText does not fall back when the insert (requests[1]) was rejected", async () => {
+  const mock = mockFetch(() =>
+    new Response(
+      '{"error":{"code":400,"message":"Invalid requests[1].insertText: The startIndex 0 must be less than the endIndex 0","status":"INVALID_ARGUMENT"}}',
+      { status: 400 },
+    ),
+  );
+  try {
+    await assert.rejects(
+      () => new GoogleSlidesClient(staticConfig()).setText({ presentationId: "p", objectId: "x", text: "t" }),
+      /requests\[1\]\.insertText/,
+    );
+    assert.equal(mock.calls.length, 1, "an insert rejection is not an empty target — no resend");
+  } finally {
+    mock.restore();
+  }
+});
+
 test("replaceText defaults to case-sensitive across the whole deck", async () => {
   const mock = mockFetch(defaultHandler);
   try {
@@ -905,6 +975,30 @@ test("setSpeakerNotes rewrites the notes shape atomically", async () => {
         { deleteText: { objectId: "notes-shape-1", textRange: { type: "ALL" } } },
         { insertText: { objectId: "notes-shape-1", text: "New notes", insertionIndex: 0 } },
       ],
+    });
+  } finally {
+    mock.restore();
+  }
+});
+
+test("setSpeakerNotes on empty notes falls back to insert-only", async () => {
+  let batches = 0;
+  const mock = mockFetch((url) => {
+    if (url.includes("/pages/")) return okJson(SLIDE_WITH_NOTES);
+    batches++;
+    if (batches === 1) return new Response(IMPLICIT_NEWLINE_400, { status: 400 });
+    return okJson({ replies: [{}] });
+  });
+  try {
+    const result = (await new GoogleSlidesClient(staticConfig()).setSpeakerNotes(
+      "p",
+      "slide-1",
+      "Fresh notes",
+    )) as Record<string, unknown>;
+    assert.equal(result.speakerNotesObjectId, "notes-shape-1");
+    assert.equal(mock.calls.length, 3, "page GET + rejected batch + insert-only resend");
+    assert.deepEqual(lastBody(mock.calls), {
+      requests: [{ insertText: { objectId: "notes-shape-1", text: "Fresh notes", insertionIndex: 0 } }],
     });
   } finally {
     mock.restore();
