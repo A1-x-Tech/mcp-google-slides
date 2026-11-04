@@ -9,6 +9,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Telemetry: failures of the login tools (`start_login`, `finish_login`, `set_client`, …) now carry
+  their origin. They used to arrive as `error_other` with no detail, because the auth library
+  rendered them itself; it now uses this server's renderer (`@a1-x-tech/mcp-google-auth` 0.1.2).
+  An `OAuthError` sends its fixed code (`OAuthError invalid_grant`) and counts as `error_auth`,
+  or `error_permission` when the API is switched off in the Cloud project (`accessNotConfigured`).
+
 - `set_text` / `set_speaker_notes`: the empty-target fallback now also recognises the rejection the
   Slides API actually sends for a shape or table cell whose text is just the implicit trailing
   newline — `Invalid requests[0].deleteText: The startIndex 0 must be less than the endIndex 0`
@@ -128,6 +134,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 - Docs: technical reference (`docs/TOOLS.md`), a task-oriented capability page
   per tool (`docs/capabilities/`), development and publishing guides.
 
+[Unreleased]: https://github.com/A1-x-Tech/mcp-google-slides/compare/v1.1.1...HEAD
 [1.1.1]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v1.1.1
 [1.1.0]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v1.1.0
 [1.0.0]: https://github.com/A1-x-Tech/mcp-google-slides/releases/tag/v1.0.0
